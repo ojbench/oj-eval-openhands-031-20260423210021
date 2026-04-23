@@ -5,19 +5,12 @@
 #include <vector>
 #include <memory>
 #include <set>
-#include <unordered_set>
 
 class pylist {
 private:
     // Forward declare the internal implementation
     struct Impl;
     std::shared_ptr<Impl> data;
-    
-    // Global registry for tracking all Impl instances
-    static std::unordered_set<Impl*>& get_registry() {
-        static std::unordered_set<Impl*> registry;
-        return registry;
-    }
 
 public:
     // Forward declare the proxy classes
@@ -297,7 +290,6 @@ inline pylist::pylist() {
             delete p;
         }
     });
-    get_registry().insert(data.get());
 }
 
 inline pylist::~pylist() {
