@@ -1,0 +1,11 @@
+# Compiled binaries
+test
+*.o
+*.out
+*.exe
+
+# Core dumps
+core.*
+
+# Test files (not part of submission)
+test.cpp
