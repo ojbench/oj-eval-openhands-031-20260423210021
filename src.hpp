@@ -92,6 +92,18 @@ public:
     friend int operator&(const ValueProxy& a, int b) { return (int)a & b; }
     friend int operator|(const ValueProxy& a, int b) { return (int)a | b; }
     friend int operator^(const ValueProxy& a, int b) { return (int)a ^ b; }
+    
+    friend int operator+(const ValueProxy& a, const ValueProxy& b) { return (int)a + (int)b; }
+    friend int operator-(const ValueProxy& a, const ValueProxy& b) { return (int)a - (int)b; }
+    friend int operator*(const ValueProxy& a, const ValueProxy& b) { return (int)a * (int)b; }
+    friend int operator/(const ValueProxy& a, const ValueProxy& b) { return (int)a / (int)b; }
+    friend int operator%(const ValueProxy& a, const ValueProxy& b) { return (int)a % (int)b; }
+    friend int operator&(const ValueProxy& a, const ValueProxy& b) { return (int)a & (int)b; }
+    friend int operator|(const ValueProxy& a, const ValueProxy& b) { return (int)a | (int)b; }
+    friend int operator^(const ValueProxy& a, const ValueProxy& b) { return (int)a ^ (int)b; }
+    
+    // Make ElementProxy a friend
+    friend class ElementProxy;
 };
 
 // Proxy class to handle operator[] return value
@@ -118,6 +130,16 @@ public:
         return pylist();
     }
     
+    // Conversion to pylist& for address-taking
+    operator pylist&() {
+        if (std::holds_alternative<pylist>(elem)) {
+            return std::get<pylist>(elem);
+        }
+        // This shouldn't happen, but we need to return something
+        static pylist dummy;
+        return dummy;
+    }
+    
     // Assignment from int
     ElementProxy& operator=(int val) {
         elem = val;
@@ -127,6 +149,17 @@ public:
     // Assignment from pylist
     ElementProxy& operator=(const pylist& lst) {
         elem = lst;
+        return *this;
+    }
+    
+    // Assignment from ValueProxy
+    ElementProxy& operator=(const ValueProxy& vp) {
+        // Convert ValueProxy to pylist or int
+        if (std::holds_alternative<pylist>(vp.value)) {
+            elem = std::get<pylist>(vp.value);
+        } else {
+            elem = std::get<int>(vp.value);
+        }
         return *this;
     }
     
@@ -210,6 +243,17 @@ public:
         }
     }
     
+    void append(const ElementProxy& ep) {
+        if (std::holds_alternative<pylist>(elem)) {
+            // Convert ElementProxy to int or pylist and append
+            if (std::holds_alternative<int>(ep.elem)) {
+                std::get<pylist>(elem).append(std::get<int>(ep.elem));
+            } else {
+                std::get<pylist>(elem).append(std::get<pylist>(ep.elem));
+            }
+        }
+    }
+    
     // Pop method for nested lists
     ValueProxy pop() {
         if (std::holds_alternative<pylist>(elem)) {
@@ -218,6 +262,9 @@ public:
         // Should not happen
         return ValueProxy(0);
     }
+    
+    // Make ValueProxy a friend so it can access elem
+    friend class ValueProxy;
 };
 
 // Implementation of pylist methods
