@@ -140,6 +140,14 @@ public:
         return dummy;
     }
     
+    // Address-of operator to allow taking address of the underlying pylist
+    pylist* operator&() {
+        if (std::holds_alternative<pylist>(elem)) {
+            return &std::get<pylist>(elem);
+        }
+        return nullptr;
+    }
+    
     // Assignment from int
     ElementProxy& operator=(int val) {
         elem = val;
