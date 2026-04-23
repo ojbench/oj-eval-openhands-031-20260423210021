@@ -5,12 +5,19 @@
 #include <vector>
 #include <memory>
 #include <set>
+#include <unordered_set>
 
 class pylist {
 private:
     // Forward declare the internal implementation
     struct Impl;
     std::shared_ptr<Impl> data;
+    
+    // Global registry for tracking all Impl instances
+    static std::unordered_set<Impl*>& get_registry() {
+        static std::unordered_set<Impl*> registry;
+        return registry;
+    }
 
 public:
     // Forward declare the proxy classes
@@ -18,6 +25,7 @@ public:
     class ElementProxy;
     
     pylist();
+    ~pylist();
     
     void append(int x);
     void append(const pylist& x);
@@ -34,6 +42,11 @@ using Element = std::variant<int, pylist>;
 
 struct pylist::Impl {
     std::vector<Element> elements;
+    
+    ~Impl() {
+        // Try to break cycles by clearing
+        elements.clear();
+    }
 };
 
 // ValueProxy holds a value (not a reference) and can act as both int and pylist
@@ -276,7 +289,20 @@ public:
 };
 
 // Implementation of pylist methods
-inline pylist::pylist() : data(std::make_shared<Impl>()) {}
+inline pylist::pylist() {
+    // Custom deleter that clears the vector before deleting
+    data = std::shared_ptr<Impl>(new Impl(), [](Impl* p) {
+        if (p) {
+            p->elements.clear();  // Break cycles
+            delete p;
+        }
+    });
+    get_registry().insert(data.get());
+}
+
+inline pylist::~pylist() {
+    // Cleanup is handled by the custom deleter
+}
 
 inline void pylist::append(int x) {
     data->elements.push_back(x);
